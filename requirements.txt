@@ -1,0 +1,32 @@
+# PyTorch (already installed, skip if installed)
+# torch==2.7.1+cu126
+# torchvision==0.22.1+cu126
+# torchaudio==2.7.1+cu126
+# --index-url https://download.pytorch.org/whl/cu126
+
+onnx==1.15.0
+onnxruntime-gpu==1.18.1
+numpy==1.26.4
+opencv-python==4.10.0.84
+scikit-learn==1.5.2
+faiss-cpu==1.11.0   # CPU fallback, pip-installable on Windows
+
+# BACKEND
+fastapi==0.115.0
+uvicorn==0.32.0
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.9
+python-dotenv==1.0.1
+pydantic==2.9.2
+pydantic-settings==2.5.2
+
+# UTILITIES
+tqdm==4.66.5
+requests==2.32.3
+Pillow==11.0.0
+joblib==1.4.2
+pickle-mixin==1.0.2
+aiofiles==24.1.0
+python-multipart==0.0.9
+starlette==0.38.5
+jinja2==3.1.4
