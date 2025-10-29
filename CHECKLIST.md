@@ -4,32 +4,69 @@ Follow this checklist step-by-step to get your system running.
 
 ## Phase 1: Prerequisites ✅
 
-- [ ] Conda environment `face` exists
-- [ ] All packages from requirements.txt are installed
-- [ ] PostgreSQL is installed and running
-- [ ] Node.js 16+ is installed
- - [x] Conda environment `face` exists
- - [ ] All packages from requirements.txt are installed
- - [x] PostgreSQL is installed and running
- - [x] Node.js 16+ is installed (tested with v22.21.0)
-- [ ] You have internet access to download models
+- [x] Conda environment `face` exists
+- [x] All packages from requirements.txt are installed
+- [x] PostgreSQL is installed and running
+- [x] Node.js 16+ is installed (tested with v22.21.0)
+- [x] GPU support configured (NVIDIA RTX 3050 6GB with CUDA)
+- [x] Internet access to download models available
 
 **Commands to verify:**
 ```powershell
 conda activate face
-python --version
-node --version
-psql --version
+python --version          # Should show Python 3.10.0
+node --version           # Should show v22.21.0
+psql --version           # Should show PostgreSQL 15.14
+python backend/check_gpu.py  # Should show GPU enabled
 ```
 
-### Observed environment (from user session)
+### ✅ Verified Environment Status
 
-- Conda environment activated: `face` (via `conda activate face`)
-- Python: Python 3.10.0
-- Node: v22.21.0
-- psql: PostgreSQL 15.14 (psql client)
+- **Conda environment**: `face` (activated)
+- **Python**: 3.10.0
+- **Node.js**: v22.21.0
+- **PostgreSQL**: 15.14
+- **GPU**: NVIDIA GeForce RTX 3050 6GB
+- **CUDA**: 12.6 (with CUDA 11.8 libraries via conda)
+- **cuDNN**: Installed via conda-forge
+- **ONNX Runtime GPU**: 1.19.2 with CUDAExecutionProvider
+- **GPU Status**: ✅ Fully operational and enabled
 
-When the user connected to `psql` they saw a console warning about differing Windows console code pages (see Troubleshooting below).
+---
+
+## Phase 1.5: GPU Setup (Optional - For Better Performance) 🚀
+
+- [x] NVIDIA GPU available (RTX 3050 6GB)
+- [x] CUDA Toolkit installed (12.6)
+- [x] ONNX Runtime GPU installed (1.19.2)
+- [x] cuDNN installed via conda
+- [x] GPU detection verified
+- [x] Models loading on GPU successfully
+
+**Commands to setup:**
+```powershell
+conda activate face
+
+# Install ONNX Runtime GPU
+pip install onnxruntime-gpu==1.19.2
+
+# Install cuDNN via conda
+conda install -c conda-forge cudnn
+
+# Verify GPU is working
+cd backend
+python check_gpu.py
+```
+
+**Success indicators:**
+```
+✅ CUDA (GPU) is available!
+✅ GPU acceleration ENABLED (CUDA)
+GPU Name: NVIDIA GeForce RTX 3050 6GB Laptop GPU
+Expected speedup: 5-10x faster than CPU
+```
+
+**Note**: If you don't have an NVIDIA GPU, the system will automatically use CPU. GPU is optional but provides 5-10x performance improvement.
 
 ---
 
@@ -139,6 +176,7 @@ npm install
 - [ ] Started FastAPI server
 - [ ] Server running on port 8000
 - [ ] No error messages in terminal
+- [ ] GPU acceleration confirmed in logs (if GPU available)
 
 **Commands:**
 ```powershell
@@ -151,6 +189,14 @@ python main.py
 ```
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000
+```
+
+**If GPU is enabled, you'll also see:**
+```
+✅ GPU acceleration ENABLED (CUDA)
+SCRFD Detector initialized with input size: 640x640
+✅ GPU acceleration ENABLED (CUDA)
+ArcFace Recognizer initialized with input size: 112x112
 ```
 
 **Test in browser:** http://localhost:8000/health
@@ -288,6 +334,7 @@ Congratulations! If all checkboxes are checked, your system is fully functional!
 - FastAPI server running
 - Database connected
 - Models loaded
+- GPU acceleration enabled (5-10x faster)
 - All services working
 
 ✅ **Frontend:**
@@ -341,6 +388,11 @@ Now that everything is working:
 
 If any checkbox failed, see the relevant section in README.md:
 
+- **GPU issues:** README.md > Troubleshooting > GPU Not Working
+  - Run `python backend/check_gpu.py` to diagnose
+  - Ensure ONNX Runtime GPU 1.19.2 is installed
+  - Verify cuDNN is installed via conda
+  - System will automatically fall back to CPU if GPU unavailable
 - **Database issues:** README.md > Database Setup
 - **Model issues:** MODEL_DOWNLOAD.md
 - **Camera issues:** README.md > Troubleshooting > Camera Not Working
@@ -404,9 +456,11 @@ Use this for daily startup:
 
 ---
 
-**System Status:** [ ] Development ✅ | [ ] Production Ready 🚀
+**System Status:** [x] Development ✅ | [ ] Production Ready 🚀
 
-**Last Updated:** $(Get-Date -Format "yyyy-MM-dd")
+**GPU Status:** [x] Enabled with NVIDIA RTX 3050 6GB 🚀
+
+**Last Updated:** October 29, 2025
 
 ---
 

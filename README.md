@@ -4,6 +4,12 @@ A production-ready, high-accuracy face recognition attendance system with **mult
 
 ## ✨ What's New in v2.0 (October 29, 2025)
 
+### 🚀 GPU Acceleration Enabled
+- **CUDA Support**: Full GPU acceleration with NVIDIA RTX 3050 6GB
+- **Performance**: 5-10x faster inference compared to CPU
+- **ONNX Runtime GPU**: Version 1.19.2 with CUDA 12.x support
+- **Smart Fallback**: Automatic CPU fallback if GPU unavailable
+
 ### 🎯 High-Accuracy Enhancements
 - **Advanced Face Quality Filtering**: Size, aspect ratio, sharpness validation
 - **Optimized Recognition**: Cosine similarity with top-K verification
@@ -74,7 +80,8 @@ A production-ready, high-accuracy face recognition attendance system with **mult
 - **Recognition Accuracy**: 98%+ (with proper training)
 - **False Accept Rate**: <2%
 - **False Reject Rate**: <5%
-- **Speed**: Real-time capable (CPU)
+- **Speed (GPU)**: 5-10x faster than CPU, real-time capable
+- **Speed (CPU)**: Real-time capable for moderate workloads
 
 ## �🏗️ Architecture
 
@@ -146,12 +153,15 @@ frontend/
 ## 📋 Prerequisites
 
 ### System Requirements
-- Python 3.8 or higher
-- Node.js 16 or higher
-- PostgreSQL 12 or higher
+- Python 3.10 or higher
+- Node.js 16 or higher (tested with v22.21.0)
+- PostgreSQL 12 or higher (tested with PostgreSQL 15.14)
 - Conda (Anaconda/Miniconda)
 - Webcam or IP cameras
-- GPU (optional, but recommended for better performance)
+- **GPU Support**: NVIDIA GPU with CUDA 11.8+ (optional, provides 5-10x speedup)
+  - Currently configured with: **NVIDIA GeForce RTX 3050 6GB**
+  - CUDA 12.6 with cuDNN support via conda
+  - ONNX Runtime GPU 1.19.2 with CUDAExecutionProvider enabled
 
 ### Conda Environment
 You should already have a conda environment named `face` with the required packages installed.
@@ -189,7 +199,7 @@ mkdir backend\models
 # Place downloaded models in backend\models\
 ```
 
-### 3. Backend Setup
+### Backend Setup
 
 ```powershell
 # Navigate to backend directory
@@ -197,6 +207,13 @@ cd backend
 
 # Activate conda environment
 conda activate face
+
+# Install/verify GPU support (if you have NVIDIA GPU)
+pip show onnxruntime-gpu  # Should show version 1.19.2
+conda list cudnn          # Should show cuDNN installed
+
+# Verify GPU is working
+python check_gpu.py       # Should show "✅ GPU acceleration ENABLED"
 
 # Create .env file from example
 copy .env.example .env
@@ -360,6 +377,14 @@ FRAME_HEIGHT=480
 ```
 
 ## 🐛 Troubleshooting
+
+### GPU Not Working
+- **Check GPU availability**: Run `python backend/check_gpu.py`
+- **Install ONNX Runtime GPU**: `pip install onnxruntime-gpu==1.19.2`
+- **Install cuDNN**: `conda install -c conda-forge cudnn`
+- **Verify CUDA version**: Run `nvcc --version` (should be 11.8+)
+- **Expected output**: Should see "✅ GPU acceleration ENABLED (CUDA)"
+- **Note**: System automatically falls back to CPU if GPU unavailable
 
 ### Model Not Found Error
 - Ensure ONNX models are downloaded to `backend/models/`
