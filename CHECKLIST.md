@@ -8,6 +8,10 @@ Follow this checklist step-by-step to get your system running.
 - [ ] All packages from requirements.txt are installed
 - [ ] PostgreSQL is installed and running
 - [ ] Node.js 16+ is installed
+ - [x] Conda environment `face` exists
+ - [ ] All packages from requirements.txt are installed
+ - [x] PostgreSQL is installed and running
+ - [x] Node.js 16+ is installed (tested with v22.21.0)
 - [ ] You have internet access to download models
 
 **Commands to verify:**
@@ -17,6 +21,15 @@ python --version
 node --version
 psql --version
 ```
+
+### Observed environment (from user session)
+
+- Conda environment activated: `face` (via `conda activate face`)
+- Python: Python 3.10.0
+- Node: v22.21.0
+- psql: PostgreSQL 15.14 (psql client)
+
+When the user connected to `psql` they saw a console warning about differing Windows console code pages (see Troubleshooting below).
 
 ---
 
@@ -225,6 +238,18 @@ npm run dev
 - [ ] Confidence score displayed
 - [ ] "Attendance Marked" message shown
 
+### Using DroidCam (Phone as Camera)
+
+You can use your Android phone as the webcam via DroidCam:
+
+1) On Windows: Install the DroidCam Client (Dev47Apps) and drivers; on Android: install the DroidCam app.
+2) Connect phone and PC (Wi‑Fi or USB). Follow the client instructions until you see the phone feed in the Windows client.
+3) Refresh the web app page and go to Live Recognition.
+4) In the "Select Video Input" dropdown, choose the DroidCam device (it usually shows as "DroidCam Source" or similar).
+5) Start recognition.
+
+Note: If you prefer using the IP URL, add the DroidCam HTTP MJPEG URL (e.g., `http://<PHONE_IP>:4747/video`) in Cameras, but the current Live Recognition captures from the browser webcam. The camera dropdown only tags attendance to that camera ID; video is taken from the selected Video Input.
+
 ---
 
 ## Phase 13: Verify Attendance (2 minutes) ✅
@@ -320,6 +345,26 @@ If any checkbox failed, see the relevant section in README.md:
 - **Model issues:** MODEL_DOWNLOAD.md
 - **Camera issues:** README.md > Troubleshooting > Camera Not Working
 - **Recognition issues:** README.md > Troubleshooting > Low Recognition Accuracy
+
+- **Windows psql code page warning:**
+
+  If you see the message:
+
+  > WARNING: Console code page (437) differs from Windows code page (1252)
+
+  Run in PowerShell before starting `psql` to set the console code page to Windows-1252:
+
+  ```powershell
+  chcp 1252
+  psql -U postgres
+  ```
+
+  Alternatively, to force UTF-8 for the session you can set:
+
+  ```powershell
+  $env:PGCLIENTENCODING = 'UTF8'
+  psql -U postgres
+  ```
 
 ---
 

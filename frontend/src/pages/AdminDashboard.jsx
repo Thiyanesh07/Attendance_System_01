@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { studentsAPI, attendanceAPI, camerasAPI, trainingAPI } from '../services/api'
 import StudentsManagement from '../components/StudentsManagement'
 import CamerasManagement from '../components/CamerasManagement'
-import LiveRecognition from '../components/LiveRecognition'
+import LiveMonitoring from '../components/LiveMonitoring'
 import AttendanceManagement from '../components/AttendanceManagement'
 import './AdminDashboard.css'
 
@@ -51,8 +51,8 @@ function AdminDashboard() {
         return <StudentsManagement />
       case 'cameras':
         return <CamerasManagement />
-      case 'recognition':
-        return <LiveRecognition />
+      case 'live':
+        return <LiveMonitoring />
       case 'attendance':
         return <AttendanceManagement />
       default:
@@ -178,10 +178,10 @@ function AdminDashboard() {
               🎥 Cameras
             </button>
             <button
-              className={`sidebar-item ${activeTab === 'recognition' ? 'active' : ''}`}
-              onClick={() => setActiveTab('recognition')}
+              className={`sidebar-item ${activeTab === 'live' ? 'active' : ''}`}
+              onClick={() => setActiveTab('live')}
             >
-              🤖 Live Recognition
+              📡 Live Monitoring
             </button>
             <button
               className={`sidebar-item ${activeTab === 'attendance' ? 'active' : ''}`}

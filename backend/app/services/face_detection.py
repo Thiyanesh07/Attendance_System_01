@@ -13,12 +13,13 @@ import os
 class SCRFDDetector:
     """
     SCRFD (Sample and Computation Redistribution for Efficient Face Detection)
-    Face detector using ONNX runtime
+    Face detector using ONNX runtime - ENHANCED FOR HIGH ACCURACY
     """
     
     def __init__(self, model_path: str = None, threshold: float = None):
         self.model_path = model_path or settings.SCRFD_MODEL_PATH
-        self.threshold = threshold or settings.FACE_DETECTION_THRESHOLD
+        # Lower threshold for better recall - we'll filter low quality faces later
+        self.threshold = threshold or 0.3  # More lenient detection
         
         if not os.path.exists(self.model_path):
             raise FileNotFoundError(
@@ -27,12 +28,31 @@ class SCRFDDetector:
                 f"https://github.com/deepinsight/insightface/tree/master/detection/scrfd"
             )
         
-        # Initialize ONNX Runtime session with CPU only
-        # Use CPUExecutionProvider to avoid CUDA errors
-        self.session = ort.InferenceSession(
-            self.model_path,
-            providers=['CPUExecutionProvider']
-        )
+        # Initialize ONNX Runtime session with GPU acceleration
+        # Try CUDA first, fallback to CPU if not available
+        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+        
+        # Try to create session with GPU, fallback to CPU if fails
+        try:
+            self.session = ort.InferenceSession(
+                self.model_path,
+                providers=providers
+            )
+        except Exception as e:
+            print(f"⚠️ Failed to initialize with CUDA: {e}")
+            print("⚠️ Falling back to CPU execution")
+            self.session = ort.InferenceSession(
+                self.model_path,
+                providers=['CPUExecutionProvider']
+            )
+        
+        # Log which provider is being used
+        available_providers = self.session.get_providers()
+        print(f"ONNX Runtime providers available: {available_providers}")
+        if 'CUDAExecutionProvider' in available_providers:
+            print("✅ GPU acceleration ENABLED (CUDA)")
+        else:
+            print("⚠️  Running on CPU (CUDA not available)")
         
         # Get input details
         self.input_name = self.session.get_inputs()[0].name
@@ -48,6 +68,7 @@ class SCRFDDetector:
             self.input_width = 640
         
         print(f"SCRFD Detector initialized with input size: {self.input_width}x{self.input_height}")
+        print(f"Detection threshold: {self.threshold}")
         
     def preprocess(self, image: np.ndarray) -> Tuple[np.ndarray, float, Tuple[int, int]]:
         """
@@ -175,7 +196,7 @@ class SCRFDDetector:
     
     def detect(self, image: np.ndarray) -> List[dict]:
         """
-        Detect faces in an image
+        Detect faces in an image with quality filtering
         
         Args:
             image: Input BGR image
@@ -192,7 +213,67 @@ class SCRFDDetector:
         # Postprocess
         faces = self.postprocess(outputs, scale, orig_size)
         
-        return faces
+        # Filter by face quality
+        high_quality_faces = []
+        for face in faces:
+            if self._assess_face_quality(image, face):
+                high_quality_faces.append(face)
+        
+        return high_quality_faces
+    
+    def _assess_face_quality(self, image: np.ndarray, face: dict, 
+                            min_size: int = 40, 
+                            max_size_ratio: float = 0.9,
+                            min_aspect_ratio: float = 0.5,
+                            max_aspect_ratio: float = 2.0) -> bool:
+        """
+        Assess if a detected face meets quality criteria for recognition
+        
+        Args:
+            image: Original image
+            face: Detected face dictionary
+            min_size: Minimum face size in pixels (width or height)
+            max_size_ratio: Maximum face size relative to image (to filter full-frame faces)
+            min_aspect_ratio: Minimum width/height ratio
+            max_aspect_ratio: Maximum width/height ratio
+            
+        Returns:
+            True if face meets quality criteria
+        """
+        bbox = face['bbox']
+        x1, y1, x2, y2 = bbox
+        
+        width = x2 - x1
+        height = y2 - y1
+        
+        # Check minimum size
+        if width < min_size or height < min_size:
+            return False
+        
+        # Check maximum size (avoid detecting entire frame as face)
+        img_height, img_width = image.shape[:2]
+        if width > img_width * max_size_ratio or height > img_height * max_size_ratio:
+            return False
+        
+        # Check aspect ratio (faces should be roughly square to slightly rectangular)
+        aspect_ratio = width / height if height > 0 else 0
+        if aspect_ratio < min_aspect_ratio or aspect_ratio > max_aspect_ratio:
+            return False
+        
+        # Check if detection score is reasonable
+        if face['score'] < 0.4:  # Final threshold after initial lenient detection
+            return False
+        
+        # Optional: Check face region contrast (blurry detection filter)
+        face_region = image[y1:y2, x1:x2]
+        if face_region.size > 0:
+            gray = cv2.cvtColor(face_region, cv2.COLOR_BGR2GRAY) if len(face_region.shape) == 3 else face_region
+            # Calculate Laplacian variance (measure of sharpness)
+            laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
+            if laplacian_var < 50:  # Too blurry
+                return False
+        
+        return True
     
     def draw_faces(self, image: np.ndarray, faces: List[dict]) -> np.ndarray:
         """

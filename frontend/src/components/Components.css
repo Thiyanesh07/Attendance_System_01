@@ -545,13 +545,346 @@
   font-size: 16px;
 }
 
+.alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.alert-warning {
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  color: #856404;
+}
+
+.alert-info {
+  background-color: #d1ecf1;
+  border: 1px solid #bee5eb;
+  color: #0c5460;
+}
+
+.btn-info {
+  background: #17a2b8;
+  color: white;
+  border: none;
+}
+
+.btn-info:hover {
+  background: #138496;
+}
+
+.btn-info:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Live Monitoring Styles */
+.live-monitoring-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.live-camera-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.live-camera-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  border-color: #667eea;
+}
+
+.live-camera-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.live-camera-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #2d3748;
+}
+
+.live-badge {
+  background: #f56565;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  animation: pulse 2s infinite;
+}
+
+.live-badge-large {
+  background: #f56565;
+  color: white;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+  animation: pulse 2s infinite;
+}
+
+.live-camera-canvas-container {
+  position: relative;
+  width: 100%;
+  background: #1a202c;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 240px;
+}
+
+.live-camera-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.live-camera-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  padding: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  text-align: center;
+  color: white;
+}
+
+.live-camera-card:hover .live-camera-overlay {
+  opacity: 1;
+}
+
+.live-camera-info {
+  margin-top: 12px;
+}
+
+.live-camera-info p {
+  margin: 6px 0;
+  font-size: 14px;
+  color: #4a5568;
+}
+
+.text-muted {
+  color: #a0aec0 !important;
+  font-size: 12px !important;
+}
+
+/* Single Camera View */
+.live-single-view {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.live-single-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.live-single-canvas-container {
+  position: relative;
+  width: 100%;
+  background: #1a202c;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.live-single-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.live-overlay-badge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.live-camera-details {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.live-camera-details h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: #2d3748;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.info-item {
+  font-size: 14px;
+  color: #4a5568;
+}
+
+.info-item strong {
+  display: block;
+  color: #2d3748;
+  margin-bottom: 4px;
+}
+
+/* Sidebar */
+.live-single-sidebar {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-height: 800px;
+  overflow-y: auto;
+}
+
+.live-single-sidebar h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  color: #2d3748;
+}
+
+.recognized-students-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.recognized-student-item {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: #f7fafc;
+  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+}
+
+.student-avatar-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+  color: white;
+  flex-shrink: 0;
+}
+
+.student-details {
+  flex: 1;
+}
+
+.student-details h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  color: #2d3748;
+}
+
+.confidence-display {
+  margin: 8px 0;
+}
+
+.confidence-display span {
+  font-size: 12px;
+  color: #718096;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.confidence-bar-small {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.confidence-fill-small {
+  height: 100%;
+  background: linear-gradient(90deg, #48bb78, #38a169);
+  transition: width 0.3s ease;
+}
+
+.attendance-status {
+  margin: 8px 0 0 0;
+  font-size: 13px;
+  color: #48bb78;
+  font-weight: 600;
+}
+
+.live-stats {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid #e2e8f0;
+}
+
+.live-stats h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #2d3748;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 14px;
+  color: #4a5568;
+}
+
+.stat-row strong {
+  font-size: 18px;
+  color: #2d3748;
+}
+
 @media (max-width: 768px) {
   .students-grid,
   .cameras-grid {
     grid-template-columns: 1fr;
   }
 
-  .recognition-container {
+  .recognition-container,
+  .live-single-view {
+    grid-template-columns: 1fr;
+  }
+
+  .live-monitoring-grid {
     grid-template-columns: 1fr;
   }
 

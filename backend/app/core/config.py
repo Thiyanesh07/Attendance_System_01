@@ -25,12 +25,13 @@ class Settings(BaseSettings):
     # Face Recognition Settings
     SCRFD_MODEL_PATH: str = "models/scrfd_10g_bnkps.onnx"
     ARCFACE_MODEL_PATH: str = "models/w600k_r50.onnx"
-    FACE_DETECTION_THRESHOLD: float = 0.5
-    FACE_RECOGNITION_THRESHOLD: float = 0.6  # L2 distance threshold - adjusted for better matching
+    FACE_DETECTION_THRESHOLD: float = 0.3  # Lower for better recall, quality filtering applied later
+    FACE_RECOGNITION_THRESHOLD: float = 0.55  # Optimized threshold for cosine similarity (higher = stricter)
     
     # FAISS Settings
     FAISS_DIMENSION: int = 512  # ArcFace embedding dimension
-    FAISS_INDEX_TYPE: str = "L2"  # or "COSINE"
+    FAISS_INDEX_TYPE: str = "COSINE"  # Use cosine similarity for better accuracy
+    FAISS_K_NEIGHBORS: int = 5  # Check top-5 matches for verification
     
     # Camera Settings
     DEFAULT_CAMERA_FPS: int = 30

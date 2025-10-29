@@ -37,6 +37,14 @@ export const camerasAPI = {
   update: (id, data) => api.put(`/cameras/${id}`, data),
   delete: (id) => api.delete(`/cameras/${id}`),
   toggle: (id) => api.post(`/cameras/${id}/toggle`),
+  testConnection: (data) => api.post('/cameras/test-connection', data),
+  snapshot: (id, params) => api.get(`/cameras/${id}/snapshot`, { params, responseType: 'blob' }),
+  startBg: (id, params) => api.post(`/cameras/${id}/start-bg`, null, { params }),
+  stopBg: (id) => api.post(`/cameras/${id}/stop-bg`),
+  status: (id) => api.get(`/cameras/${id}/status`),
+  startAllBg: (params) => api.post('/cameras/start-all-bg', null, { params }),
+  stopAllBg: () => api.post('/cameras/stop-all-bg'),
+  allBgStatus: () => api.get('/cameras/bg-status'),
 }
 
 // Recognition API

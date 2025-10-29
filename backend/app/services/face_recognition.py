@@ -26,12 +26,31 @@ class ArcFaceRecognizer:
                 f"https://github.com/deepinsight/insightface/tree/master/model_zoo"
             )
         
-        # Initialize ONNX Runtime session with CPU only
-        # Use CPUExecutionProvider to avoid CUDA errors
-        self.session = ort.InferenceSession(
-            self.model_path,
-            providers=['CPUExecutionProvider']
-        )
+        # Initialize ONNX Runtime session with GPU acceleration
+        # Try CUDA first, fallback to CPU if not available
+        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+        
+        # Try to create session with GPU, fallback to CPU if fails
+        try:
+            self.session = ort.InferenceSession(
+                self.model_path,
+                providers=providers
+            )
+        except Exception as e:
+            print(f"⚠️ Failed to initialize with CUDA: {e}")
+            print("⚠️ Falling back to CPU execution")
+            self.session = ort.InferenceSession(
+                self.model_path,
+                providers=['CPUExecutionProvider']
+            )
+        
+        # Log which provider is being used
+        available_providers = self.session.get_providers()
+        print(f"ONNX Runtime providers available: {available_providers}")
+        if 'CUDAExecutionProvider' in available_providers:
+            print("✅ GPU acceleration ENABLED (CUDA)")
+        else:
+            print("⚠️  Running on CPU (CUDA not available)")
         
         # Get input details
         self.input_name = self.session.get_inputs()[0].name

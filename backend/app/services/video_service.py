@@ -8,6 +8,7 @@ from typing import List, Generator, Optional
 import base64
 from io import BytesIO
 from PIL import Image
+import os
 
 
 class VideoCapture:
@@ -34,10 +35,25 @@ class VideoCapture:
             # Try to parse as integer (camera index)
             try:
                 source_int = int(self.source)
-                self.cap = cv2.VideoCapture(source_int)
+                # On Windows, prefer DirectShow to avoid MSMF issues
+                if os.name == 'nt':
+                    self.cap = cv2.VideoCapture(source_int, cv2.CAP_DSHOW)
+                    # Fallback to MSMF if DSHOW fails to open
+                    if not self.cap.isOpened():
+                        self.cap = cv2.VideoCapture(source_int, cv2.CAP_MSMF)
+                else:
+                    self.cap = cv2.VideoCapture(source_int)
             except ValueError:
                 # Use as string (IP address or file path)
-                self.cap = cv2.VideoCapture(self.source)
+                src = str(self.source)
+                # Prefer FFMPEG for network streams (HTTP/RTSP) for better compatibility
+                if src.startswith("rtsp://") or src.startswith("http://") or src.startswith("https://"):
+                    self.cap = cv2.VideoCapture(src, cv2.CAP_FFMPEG)
+                    if not self.cap.isOpened():
+                        # Fallback to default backend
+                        self.cap = cv2.VideoCapture(src)
+                else:
+                    self.cap = cv2.VideoCapture(src)
             
             if self.cap.isOpened():
                 self.is_opened = True

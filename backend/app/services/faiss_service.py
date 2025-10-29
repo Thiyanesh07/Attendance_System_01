@@ -41,15 +41,17 @@ class FaissVectorDB:
     
     def _create_index(self):
         """Create new FAISS index"""
-        # Use L2 distance for face embeddings
-        # For cosine similarity, embeddings should be normalized
-        self.index = faiss.IndexFlatL2(self.dimension)
-        # Alternatively use IndexFlatIP for inner product (cosine similarity with normalized vectors)
-        # self.index = faiss.IndexFlatIP(self.dimension)
+        # Use Inner Product (cosine similarity) for normalized embeddings
+        # This gives better results than L2 distance for face recognition
+        if settings.FAISS_INDEX_TYPE == "COSINE":
+            self.index = faiss.IndexFlatIP(self.dimension)  # Inner product for cosine similarity
+            print(f"Created new FAISS index with COSINE similarity, dimension {self.dimension}")
+        else:
+            self.index = faiss.IndexFlatL2(self.dimension)  # L2 distance
+            print(f"Created new FAISS index with L2 distance, dimension {self.dimension}")
         
         self.student_ids = []
         self.embeddings_data = {}
-        print(f"Created new FAISS index with dimension {self.dimension}")
     
     def _load_index(self):
         """Load existing FAISS index and metadata"""
@@ -149,19 +151,19 @@ class FaissVectorDB:
     def search(
         self, 
         query_embedding: np.ndarray, 
-        k: int = 1,
+        k: int = None,
         threshold: float = None
     ) -> List[Tuple[int, float]]:
         """
-        Search for similar face embeddings
+        Search for similar face embeddings with advanced verification
         
         Args:
             query_embedding: Query face embedding
-            k: Number of nearest neighbors to return
-            threshold: Distance threshold for matching
+            k: Number of nearest neighbors to check (default from settings)
+            threshold: Similarity threshold for matching (higher = stricter)
             
         Returns:
-            List of (student_id, distance) tuples
+            List of (student_id, similarity) tuples sorted by confidence
         """
         print(f"[FAISS] Searching with {self.index.ntotal} embeddings in index")
         
@@ -169,39 +171,56 @@ class FaissVectorDB:
             print("[FAISS] Index is empty, no embeddings to search")
             return []
         
+        k = k or getattr(settings, 'FAISS_K_NEIGHBORS', 5)
         threshold = threshold or settings.FACE_RECOGNITION_THRESHOLD
-        print(f"[FAISS] Using threshold: {threshold}")
+        print(f"[FAISS] Using k={k}, threshold={threshold}")
         
         # Ensure query is the right shape
         if query_embedding.ndim == 1:
             query_embedding = query_embedding.reshape(1, -1)
         
-        # Normalize query
+        # Normalize query for cosine similarity
         query_embedding = query_embedding / np.linalg.norm(query_embedding, axis=1, keepdims=True)
         
-        # Search
-        distances, indices = self.index.search(query_embedding.astype(np.float32), k)
+        # Search top-k matches
+        scores, indices = self.index.search(query_embedding.astype(np.float32), min(k, self.index.ntotal))
         
-        print(f"[FAISS] Search results - distances: {distances[0]}, indices: {indices[0]}")
+        print(f"[FAISS] Search results - scores: {scores[0]}, indices: {indices[0]}")
         
-        # Filter results by threshold and map to student IDs
-        results = []
-        for dist, idx in zip(distances[0], indices[0]):
+        # Collect all matches and apply verification
+        candidate_matches = {}
+        
+        for score, idx in zip(scores[0], indices[0]):
             if idx >= 0 and idx < len(self.student_ids):
-                # For L2 distance, lower is better
-                # Convert to similarity score (0-1)
-                similarity = 1 / (1 + dist)
+                student_id = self.student_ids[idx]
                 
-                print(f"[FAISS] Found match - idx: {idx}, student_id: {self.student_ids[idx]}, dist: {dist:.4f}, similarity: {similarity:.4f}, threshold: {threshold}")
-                
-                if dist < threshold:
-                    student_id = self.student_ids[idx]
-                    results.append((student_id, float(similarity)))
-                    print(f"[FAISS] Match accepted - student_id: {student_id}, similarity: {similarity:.4f}")
+                # For cosine similarity (IndexFlatIP), higher score is better (range: -1 to 1)
+                # For L2 distance (IndexFlatL2), lower score is better
+                if settings.FAISS_INDEX_TYPE == "COSINE":
+                    similarity = float(score)  # Already in range [0, 1] for normalized vectors
                 else:
-                    print(f"[FAISS] Match rejected - distance {dist:.4f} >= threshold {threshold}")
+                    # Convert L2 distance to similarity
+                    similarity = 1 / (1 + score)
+                
+                print(f"[FAISS] Candidate - idx: {idx}, student_id: {student_id}, score: {score:.4f}, similarity: {similarity:.4f}")
+                
+                # Keep track of best match per student (in case multiple embeddings)
+                if student_id not in candidate_matches or similarity > candidate_matches[student_id]:
+                    candidate_matches[student_id] = similarity
         
-        print(f"[FAISS] Returning {len(results)} matches")
+        # Filter by threshold and sort by confidence
+        results = []
+        for student_id, similarity in candidate_matches.items():
+            if similarity >= threshold:
+                results.append((student_id, similarity))
+                print(f"[FAISS] Match accepted - student_id: {student_id}, similarity: {similarity:.4f}")
+            else:
+                print(f"[FAISS] Match rejected - student_id: {student_id}, similarity: {similarity:.4f} < threshold {threshold}")
+        
+        # Sort by similarity (highest first)
+        results.sort(key=lambda x: x[1], reverse=True)
+        
+        print(f"[FAISS] Final results: {len(results)} matches above threshold")
         return results
     
     def remove_student_embeddings(self, student_id: int):

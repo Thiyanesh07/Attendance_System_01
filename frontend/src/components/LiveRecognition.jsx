@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import Webcam from 'react-webcam'
 import { camerasAPI, recognitionAPI } from '../services/api'
 import './Components.css'
@@ -6,20 +6,65 @@ import './Components.css'
 function LiveRecognition() {
   const [cameras, setCameras] = useState([])
   const [selectedCamera, setSelectedCamera] = useState(null)
+  const [videoDevices, setVideoDevices] = useState([])
+  const [selectedDeviceId, setSelectedDeviceId] = useState('')
   const [recognizing, setRecognizing] = useState(false)
   const [recognitionResults, setRecognitionResults] = useState([])
   const [allFaces, setAllFaces] = useState([])  // Store all detected faces for bounding boxes
   const [loading, setLoading] = useState(true)
+  const [mediaError, setMediaError] = useState('')
+  const [useFallbackConstraints, setUseFallbackConstraints] = useState(false)
+  const [mountKey, setMountKey] = useState(0)
   const webcamRef = useRef(null)
   const canvasRef = useRef(null)  // Canvas for drawing bounding boxes
   const recognitionIntervalRef = useRef(null)
 
   useEffect(() => {
     fetchCameras()
+    initVideoDevices()
     return () => {
       stopRecognition()
     }
   }, [])
+
+  const initVideoDevices = async () => {
+    try {
+      // Some browsers require permission before enumerateDevices returns labels
+      // We'll try to get a temporary stream to ensure permission prompt
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+          const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+          // Immediately stop tracks; we only needed the permission
+          tempStream.getTracks().forEach((t) => t.stop())
+        } catch (e) {
+          // If user denies, we'll still try to list devices without labels
+        }
+      }
+
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const videos = devices.filter((d) => d.kind === 'videoinput')
+      setVideoDevices(videos)
+      if (videos.length > 0) {
+        setSelectedDeviceId(videos[0].deviceId)
+      }
+    } catch (err) {
+      console.error('Error initializing video devices:', err)
+    }
+  }
+
+  // Build stable video constraints for the webcam component
+  const videoConstraints = useMemo(() => {
+    // If a specific device is chosen, use exact match to force Chrome/Edge to switch correctly
+    if (selectedDeviceId && !useFallbackConstraints) {
+      return {
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        deviceId: { exact: selectedDeviceId },
+      }
+    }
+    // Fallback to default user-facing camera
+    return { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+  }, [selectedDeviceId, useFallbackConstraints])
 
   const fetchCameras = async () => {
     try {
@@ -194,9 +239,30 @@ function LiveRecognition() {
     setRecognitionResults([])
   }
 
+  const handleDeviceChange = (e) => {
+    const deviceId = e.target.value
+    setSelectedDeviceId(deviceId)
+    setUseFallbackConstraints(false)
+    // Restart stream/recognition if running
+    if (recognizing) {
+      stopRecognition()
+      // Small timeout to allow Webcam to reinitialize with the new device
+      setTimeout(() => startRecognition(), 300)
+    }
+  }
+
+  const retryCamera = () => {
+    setMediaError('')
+    setUseFallbackConstraints(false)
+    setMountKey((k) => k + 1)
+  }
+
   if (loading) {
     return <div className="loading">Loading cameras...</div>
   }
+
+  // Helpful messages for common camera issues
+  const insecureContext = typeof window !== 'undefined' && !window.isSecureContext && !/^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname)
 
   if (cameras.length === 0) {
     return (
@@ -227,6 +293,18 @@ function LiveRecognition() {
           </select>
         </div>
 
+        <div className="camera-select" style={{ marginTop: '12px' }}>
+          <label>Select Video Input (Webcam/DroidCam):</label>
+          <select value={selectedDeviceId} onChange={handleDeviceChange}>
+            {videoDevices.map((d) => (
+              <option key={d.deviceId} value={d.deviceId}>
+                {d.label || `Camera ${d.deviceId.substring(0, 6)}`}
+              </option>
+            ))}
+          </select>
+          <small className="help-text">Tip: Install DroidCam client on Windows so your phone appears here as a webcam device.</small>
+        </div>
+
         <div className="recognition-container">
           <div className="video-section">
             <div className="video-container">
@@ -234,8 +312,24 @@ function LiveRecognition() {
                 ref={webcamRef}
                 audio={false}
                 screenshotFormat="image/jpeg"
-                width={640}
-                height={480}
+                // Let CSS control sizing; request ideal capture size via constraints
+                style={{ width: '100%', height: 'auto' }}
+                playsInline
+                mirrored={false}
+                videoConstraints={videoConstraints}
+                onUserMediaError={(e) => {
+                  console.error('getUserMedia error:', e)
+                  const msg = e?.message || 'Unable to access the camera'
+                  setMediaError(msg)
+                  // If we requested a specific device, try a safe fallback once
+                  if (!useFallbackConstraints && selectedDeviceId) {
+                    setUseFallbackConstraints(true)
+                    // Force remount to apply new constraints
+                    setMountKey((k) => k + 1)
+                  }
+                }}
+                onUserMedia={() => setMediaError('')}
+                key={`${selectedDeviceId || 'default'}-${useFallbackConstraints}-${mountKey}`}
               />
               <canvas
                 ref={canvasRef}
@@ -247,6 +341,26 @@ function LiveRecognition() {
                 </div>
               )}
             </div>
+
+            {(mediaError || insecureContext) && (
+              <div className="alert alert-warning" style={{ marginTop: 12 }}>
+                {insecureContext ? (
+                  <>
+                    Camera access is blocked because this page isn’t served from a secure origin. Use https or open via localhost.
+                  </>
+                ) : (
+                  <>
+                    Camera error: {mediaError}
+                    <div style={{ marginTop: 8 }}>
+                      • Close any apps that may be using the camera (Teams/Zoom/Camera/DroidCam) and try again.
+                      <br />• Check browser permissions (lock icon → Site settings → Allow Camera).
+                      <br />• If a specific webcam is selected, we’ll auto-fallback to the default device. You can also
+                      <button className="btn btn-secondary btn-sm" style={{ marginLeft: 8 }} onClick={retryCamera}>Retry</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
 
             <div className="recognition-controls">
               {!recognizing ? (
